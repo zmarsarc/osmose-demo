@@ -169,7 +169,11 @@ if __name__ == "__main__":
         
         # 创建一个字典
         data = {}
-        data.update({"angle": angle})
+        data.update({"id": 0, 
+                     "location": "unknow location", 
+                     "description": "no description", 
+                     "mesh": "combined_mesh.obj"})
+        data.update({"leaning": angle})
         data.update({"radius": cylinder_coefficients[6]})
         data.update({"height": height})
         data.update({"diameter": radius_list})
