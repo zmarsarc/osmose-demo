@@ -184,7 +184,7 @@ if __name__ == "__main__":
             os.makedirs(output_dir)
     
         # 保存数据到json文件
-        with open('output/data.json', 'w') as f:
+        with open('output/pole-0.json', 'w') as f:
             json.dump(data, f, indent=4)
 
 
