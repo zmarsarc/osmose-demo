@@ -43,12 +43,11 @@ def rotate_point_cloud_to_align_plane_with_y_axis(plane_coefficients, pcd_file):
     rotated_pcd.points = o3d.utility.Vector3dVector(rotated_points)
 
     # 保存并展示旋转后的点云数据
-    o3d.io.write_point_cloud("rotated_combined.pcd", rotated_pcd)
-    # o3d.visualization.draw_geometries([rotated_pcd], window_name="Rotated Combined Point Cloud")
+    o3d.io.write_point_cloud("output/rotated_combined.pcd", rotated_pcd)
 
     return rotated_pcd
 
-def merge_and_convert_to_mesh(plane_coefficients, plane_pcd_path, cylinder_pcd_path, output_mesh_path="combined_mesh.obj"): 
+def merge_and_convert_to_mesh(plane_coefficients, plane_pcd_path, cylinder_pcd_path, output_mesh_path="output/combined_mesh.obj"): 
     # 加载平面点云
     plane_pcd = o3d.io.read_point_cloud(plane_pcd_path)
     # 加载圆柱点云
@@ -57,29 +56,13 @@ def merge_and_convert_to_mesh(plane_coefficients, plane_pcd_path, cylinder_pcd_p
     # 合并点云
     combined_pcd = plane_pcd + cylinder_pcd
     
-    # 展示合并后的点云
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window(window_name="Combined Point Cloud")
-    # vis.add_geometry(combined_pcd)
-    # vis.run()
-    # vis.destroy_window()
-    
     # 保存合并后的点云为 .pcd 文件
     o3d.io.write_point_cloud("combined.pcd", combined_pcd)
     
     rotated_combined_pcd = rotate_point_cloud_to_align_plane_with_y_axis(plane_coefficients, "combined.pcd")
-    
-    # rotated_combined_pcd = o3d.io.read_point_cloud("rotated_combined.pcd")
-    
+        
     # 计算法线
     rotated_combined_pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-    
-    # 展示计算法线后的点云
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window(window_name="Point Cloud with Normals")
-    # vis.add_geometry(rotated_combined_pcd)
-    # vis.run()
-    # vis.destroy_window()
     
     # 将点云转换为三角网格
     distances = rotated_combined_pcd.compute_nearest_neighbor_distance()
@@ -89,13 +72,6 @@ def merge_and_convert_to_mesh(plane_coefficients, plane_pcd_path, cylinder_pcd_p
         rotated_combined_pcd,
         o3d.utility.DoubleVector([radius, radius * 2])
     )
-    
-    # 展示三角网格
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window(window_name="Triangle Mesh")
-    # vis.add_geometry(mesh)
-    # vis.run()
-    # vis.destroy_window()
     
     # 保存三角网格为 .obj 文件
     o3d.io.write_triangle_mesh(output_mesh_path, mesh)

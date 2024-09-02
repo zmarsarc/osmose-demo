@@ -1,6 +1,8 @@
 import pcl
 import numpy as np
 from configparser import ConfigParser
+import json
+import os
 # 下面是一些自己的工具函数
 from utils import visualize_point_cloud,get_pcd_from_file
 from target_height import extract_cylinder_section_at_height, get_radius_list
@@ -13,7 +15,6 @@ def filter_point_cloud(pcd, min_distance=0.6, max_distance=1.5):
     indices = np.where((distances > min_distance) & (distances <= max_distance))[0]
     filtered_cloud = pcl.PointCloud()
     filtered_cloud.from_array(np.asarray(pcd)[indices])
-
     return filtered_cloud
 
 # 地面拟合，RANSAC算法迭代的结果
@@ -124,8 +125,6 @@ def extract_points_near_plane(pcd, plane_coefficients, cylinder_coefficients, ra
         translated_plane_pcd = pcl.PointCloud()
         translated_plane_pcd.from_array(translated_plane_points)
         pcl.save(translated_plane_pcd, "filtered_plane.pcd")
-        # print("New plane coefficients:", new_plane_coefficients)
-        # visualize_point_cloud(translated_plane_pcd, "Filtered Plane Point Cloud")  # 展示新的地面点云拟合结果
         
         # 读取圆柱体点云做平移操作
         cylinder_pcd = pcl.load("cylinder.pcd")
@@ -142,19 +141,16 @@ if __name__ == "__main__":
     # 读取配置文件
     config.read('config.ini')
     # 此处修改读取的点云文件名
-    pcd = get_pcd_from_file("0d.pcd")
+    pcd = get_pcd_from_file("result.pcd")
     # 读取点云并展示
-    # visualize_point_cloud(pcd,"Original Point Cloud")
     filtered_pcd = filter_point_cloud(pcd, config.getfloat("Settings", "min_distance"), config.getfloat("Settings", "max_distance"))
     
     # 拟合平面并打印法线
     plane_pcd, plane_coefficients = RANSAC_FIT_Plane(filtered_pcd, config.getfloat("Settings", "distance_threshold_plane"))
-    # visualize_point_cloud(plane_pcd,"Plane Point Cloud")  # 展示地面点云拟合结果
     
     # 拟合圆柱体并打印半径和法线
     cylinder_pcd, cylinder_coefficients = RANSAC_FIT_Cylinder(filtered_pcd, config.getfloat("Settings", "distance_threshold_cylinder"), config.getfloat("Settings", "radius_min"), config.getfloat("Settings", "radius_max"))
     if cylinder_pcd is not None:
-        # visualize_point_cloud(cylinder_pcd,"Cylinder Point Cloud")  # 展示圆柱体点云拟合结果
 
         angle = calculate_angle_between_vectors(plane_coefficients, cylinder_coefficients)
 
@@ -167,10 +163,25 @@ if __name__ == "__main__":
         # extract_cylinder_section_at_height(cylinder_pcd, plane_coefficients, config.getfloat("section", "height"))
         # 获取各个高度的椭圆短半径并输出高度
         radius_list, height = get_radius_list(cylinder_pcd, plane_coefficients)
-        # print("Radius list:", radius_list)
         print("Height:", height)
         # 点云数据转换为三角网格
         merge_and_convert_to_mesh(plane_coefficients, "filtered_plane.pcd", "cylinder.pcd")
+        
+        # 创建一个字典
+        data = {}
+        data.update({"angle": angle})
+        data.update({"radius": cylinder_coefficients[6]})
+        data.update({"height": height})
+        data.update({"diameter": radius_list})
+        
+        # 确保 output 目录存在
+        output_dir = 'output'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+    
+        # 保存数据到json文件
+        with open('output/data.json', 'w') as f:
+            json.dump(data, f, indent=4)
 
 
         
